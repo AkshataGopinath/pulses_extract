@@ -6,7 +6,7 @@ import shutil
 import StringIO
 
 import psrchive
-import pyfits
+import astropy.io.fits as pyfits
 import numpy as np
 import pandas as pd
 from presto import psr_utils

@@ -2,7 +2,7 @@ import argparse
 import os
 from glob import glob
 
-import pyfits
+import astropy.io.fits as pyfits
 
 from extract_psrfits_subints import extract_subints_from_observation
 from create_psrchives import dspsr

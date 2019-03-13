@@ -1,6 +1,6 @@
 import subprocess
 import argparse
-import pyfits
+import astropy.io.fits as pyfits
 
 def parser():
   # Command-line options

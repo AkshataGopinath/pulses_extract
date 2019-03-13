@@ -5,7 +5,6 @@ import Image
 from PIL import ImageTk
 import pandas as pd
 import numpy as np
-import pyfits
 import h5py
 import Tkinter
 import argparse
