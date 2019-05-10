@@ -3,6 +3,8 @@ import glob
 import os
 import sys
 
+import matplotlib
+matplotlib.use('Agg')
 import pandas as pd
 pd.options.mode.chained_assignment = None
 import numpy as np
@@ -63,9 +65,11 @@ def main(args):
     store.append('pulses',pulses)
     #store.append('pulses_bu',pulses) #Create a back up table in the database
     store.close()
+    pulses = pulses[pulses.Pulse == -1]
     obs_id = os.path.splitext(args.db_name)[0]
     pulses.sort_index().to_csv(os.path.join(args.store_dir,'{}_pulses.txt'.format(obs_id)), sep='\t', columns=['Pulse',], header=['Rank',], index_label='#PulseID')
 
+  pulses = pulses[pulses.Pulse < 4]
   if args.pulses_checked: 
     pulses_checked(pulses, args.pulses_checked)
     store = pd.HDFStore(os.path.join(args.store_dir,args.db_name), 'r+')
@@ -112,6 +116,7 @@ def events_database(args, header):
   params = parameters[args.parameters_id]
   sp_files = glob.glob(os.path.join(args.folder,'{}*.singlepulse'.format(args.idL)))
   events = pd.concat(pd.read_csv(f, delim_whitespace=True, dtype=np.float64) for f in sp_files if os.stat(f).st_size > 0)
+  print "Loaded {} events.".format(events.shape[0])
   events.reset_index(drop=True, inplace=True)
   events.columns = ['DM','Sigma','Time','Sample','Downfact','a','b']
   events = events.ix[:,['DM','Sigma','Time','Sample','Downfact']]
@@ -154,8 +159,10 @@ def pulses_database(args, header, events=None):
   #Create pulses database
   if args.events_database: events = pd.read_hdf(os.path.join(args.store_dir,args.db_name),'events')
   elif not isinstance(events, pd.DataFrame): events = events_database(args, header)
+  events = events[events.Pulse >= 0]
   gb = events.groupby('Pulse',sort=False)
   pulses = events.loc[gb.Sigma.idxmax()]
+  print "Detected {} pulses.".format(pulses.shape[0])
   pulses.index = pulses.Pulse
   pulses.index.name = None
   pulses = pulses.loc[:,['DM','Sigma','Time','Sample','Downfact']]
@@ -183,7 +190,7 @@ def pulses_database(args, header, events=None):
   #print "%d grouped events"%(pulses.shape[0])
 
   n_pulses = pulses.shape[0] #zeroth order pulses
-  print "{} pulses detected".format(n_pulses)
+  print "Selected {} pulses.".format(n_pulses)
   
   if n_pulses > 0 and args.no_RFI:
     RFIexcision(events, pulses, params, args) #1st order
@@ -203,8 +210,7 @@ def RFIexcision(events, pulses, params, args):
   events.sort_values(by='DM',inplace=True)
   gb = events.groupby('Pulse')
   pulses.sort_index(inplace=True)
-  
-  
+    
   #Remove flat SNR pulses. Minimum ratio to have weakest pulses with SNR = 8
   pulses.Pulse[pulses.Sigma / gb.Sigma.min() <= params['SNR_peak_min'] / params['SNR_min']] = RFI_code
   
@@ -214,7 +220,7 @@ def RFIexcision(events, pulses, params, args):
   #Remove pulses peaking near the DM edges
   DM_frac = (params['DM_high'] - params['DM_low']) * 0.2  #Remove 5% of DM range from each edge
   pulses.Pulse[(pulses.DM < params['DM_low']+DM_frac) | (pulses.DM > params['DM_high']-DM_frac)] = RFI_code
-  #print pulses[pulses.Pulse==RFI_code].shape[0]
+  
   #Remove pulses intersecting half the maximum SNR different than 2 or 4 times
   def crosses(sig):
     diff = sig - (sig.max() + sig.min()) / 2.
@@ -222,23 +228,21 @@ def RFIexcision(events, pulses, params, args):
     return (count != 2) & (count != 4) & (count != 6) & (count != 8)
   pulses.Pulse[gb.apply(lambda x: crosses(x.Sigma))] = RFI_code
   
-  #Remove weaker pulses within a temporal window
+  """
+  #Remove weaker pulses within a temporal window [good for multi-beam]
   def simultaneous(p):                            
     puls = pulses.Pulse[np.abs(pulses.Time-p.Time) < 0.02]
     if puls.shape[0] == 1: return False
     elif p.name == puls.index[0]: return False
     else: return True
   pulses.Pulse[pulses.apply(lambda x: simultaneous(x), axis=1)] = RFI_code
-
+  """
+  
   #Remove many pulses concentrated in time
   def RFI_bursts(p):
     puls = pulses.Pulse[np.abs(pulses.Time-p.Time) < 1.]
     if puls.shape[0] <= 10: return False
-    elif p.name == puls.index[0]: 
-      auto_waterfaller.main(args.fits, os.path.join(args.store_dir,args.db_name), p.Time, p.DM, p.IMJD, p.SMJD, p.Sigma, \
-                                             duration=p.Duration, top_freq=p.top_Freq, \
-                                             FRB_name=params['FRB_name']+'_wide', directory=args.store_dir, pulse_id=p.name)
-      return False
+    elif p.name == puls.index[0]: return False
     else: return True
   pulses.Pulse[pulses.apply(lambda x: RFI_bursts(x), axis=1)] = RFI_code
   

@@ -293,14 +293,18 @@ def psrchive_plots(archive_name): #assuming: (full name of the archive with path
 
 def main(fits, database, time, DM, IMJD, SMJD, sigma, duration=0.01, pulse_id=4279, top_freq=0., directory='.',\
 		  FRB_name='FRB121102', downsamp=1., beam=0, group=0, plot_standard=True, plot_zoom=True, plot_wide=False):
-        num_elements = time.size
-        if isinstance(DM, float) or isinstance(DM, int): DM = np.zeros(num_elements) + DM
-        if isinstance(sigma, float) or isinstance(sigma, int): sigma = np.zeros(num_elements) + sigma
-        if isinstance(duration, float) or isinstance(duration, int): duration = np.zeros(num_elements) + duration
-        if isinstance(pulse_id, float) or isinstance(pulse_id, int): pulse_id = np.zeros(num_elements) + pulse_id
-        if isinstance(downsamp, float) or isinstance(downsamp, int): downsamp = np.zeros(num_elements) + downsamp
-        
-	if FRB_name == 'FRB121102':
+
+  if isinstance(time, float) or isinstance(time, int): time = np.array([time])
+  num_elements = time.size
+  if isinstance(DM, float) or isinstance(DM, int): DM = np.zeros(num_elements) + DM
+  if isinstance(sigma, float) or isinstance(sigma, int): sigma = np.zeros(num_elements) + sigma
+  if isinstance(duration, float) or isinstance(duration, int): duration = np.zeros(num_elements) + duration
+  if isinstance(pulse_id, float) or isinstance(pulse_id, int): pulse_id = np.zeros(num_elements) + pulse_id
+  if isinstance(downsamp, float) or isinstance(downsamp, int): downsamp = np.zeros(num_elements) + downsamp
+  if isinstance(IMJD, float) or isinstance(IMJD, int): IMJD = np.zeros(num_elements) + IMJD
+  if isinstance(SMJD, float) or isinstance(SMJD, int): SMJD = np.zeros(num_elements) + SMJD
+
+  if not FRB_name.startswith('FRB130628'):
 		rawdata = psrfits.PsrfitsFile(fits)
 		observation = os.path.basename(fits)
 		observation = observation[:observation.find('_subs_')]	
@@ -311,7 +315,7 @@ def main(fits, database, time, DM, IMJD, SMJD, sigma, duration=0.01, pulse_id=42
 	SMJD = SMJD / 86400.
 
 	for i, t in enumerate(time):
-		if FRB_name == 'FRB130628':
+		if FRB_name.startswith('FRB130628'):
 			fits = glob("%s/*b%ds%d*.fits"%(fits,beam[i],group[i]))[0]
 			rawdata = psrfits.PsrfitsFile(fits)
 			observation = os.path.basename(fits)
