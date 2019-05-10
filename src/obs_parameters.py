@@ -18,7 +18,7 @@ parameters = {
     'DM_search_high' : 620.,
     'SNR_peak_min' : 8.,
     'SNR_min' : 6.,
-    'Downfact_max' : 100,
+    'Downfact_max' : 300,
     'FRB_name' : "FRB121102",
     },
   
@@ -29,7 +29,7 @@ parameters = {
     'DM_search_high' : 570.,
     'SNR_peak_min' : 8.,
     'SNR_min' : 5.,
-    'Downfact_max' : 100,
+    'Downfact_max' : 300,
     'FRB_name' : "FRB130628",
     'down_values' : {0: 2, 475: 3}
   },
@@ -41,7 +41,7 @@ parameters = {
     'DM_search_high' : 570.,
     'SNR_peak_min' : 8.,
     'SNR_min' : 5.,
-    'Downfact_max' : 100,
+    'Downfact_max' : 300,
     'FRB_name' : "FRB130628",
     'down_values' : {0: 2, 315: 3, 540: 6}
   } 
